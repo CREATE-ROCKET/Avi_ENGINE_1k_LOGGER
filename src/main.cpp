@@ -1,9 +1,19 @@
 #include <Arduino.h>
+#include <SPICREATE.h>
+#include <MCP3208.h>
 
 #include "FS.h"
 #include "SD_MMC.h"
 
+#define SCK1 33
+#define MISO1 25
+#define MOSI1 26
+#define MCPCS 27
 #define LED 19
+#define loggingPeriod 1
+
+SPICREATE::SPICreate SPIC1;
+MCP mcp3208;
 
 File logfile;
 xTaskHandle logHandle;
@@ -30,12 +40,32 @@ void writeHeader(void)
   logfile.close();
 }
 
+IRAM_ATTR void logging(void *parameters)
+{
+  portTickType xLastWakeTime = xTaskGetTickCount();
+  for (;;)
+  {
+    logfile.print(micros());
+    logfile.print(",");
+    for (int i = 0; i < 8; i++)
+    {
+      logfile.print(mcp3208.Get(i));
+      logfile.print(",");
+    }
+    logfile.println();
+    vTaskDelayUntil(&xLastWakeTime, loggingPeriod / portTICK_PERIOD_MS);
+  }
+}
+
 void setup()
 {
   // io init
   Serial.begin(115200);
   pinMode(LED, OUTPUT);
+  SPIC1.begin(VSPI, SCK1, MISO1, MOSI1);
+  mcp3208.begin(&SPIC1, MCPCS, 1000000);
 
+  // sdio init
   if (!SD_MMC.begin())
   {
     Serial.println("Card Mount Failed");
@@ -88,24 +118,25 @@ void loop()
       {
         Serial.println("filemnterror");
       }
-      int startTime = micros();
-      for (int i = 0; i < 65536; i++)
-      {
-        if (logfile.println("256"))
-        {
-        }
-        else
-        {
-          Serial.print("Write failed");
-        }
-      }
+
+      xTaskCreate(logging, "logging", 65536, NULL, 1, &logHandle);
+      Serial.println("logging start");
+    }
+    if (cmd == 's')
+    {
+      vTaskDelete(logHandle);
       logfile.close();
-      Serial.printf("it took %i second\n", micros() - startTime);
+      Serial.println("logging stop");
     }
     if (cmd == 'e')
     {
       SD_MMC.remove("/hello.txt");
       Serial.println("remove file");
     }
+    if (cmd == 'r')
+    {
+      ESP.restart();
+    }
   }
+  delay(1000);
 }
