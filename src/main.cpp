@@ -22,6 +22,7 @@ File logfile;
 xTaskHandle logHandle;
 xTaskHandle writeSDHandle;
 xTaskHandle initSDHandle;
+uint16_t logCounter = 0;
 
 QueueHandle_t xQueue;
 
@@ -136,6 +137,13 @@ IRAM_ATTR void writeSD(void *parameters)
     if (xQueueReceive(xQueue, &data, 0) == pdTRUE)
     {
       logfile.print(data);
+      logCounter++;
+      if (logCounter == 1024)
+      {
+        logCounter = 0;
+        logfile.close();
+        logfile = SD_MMC.open("/hello.txt", FILE_APPEND);
+      }
     }
     else
     {
