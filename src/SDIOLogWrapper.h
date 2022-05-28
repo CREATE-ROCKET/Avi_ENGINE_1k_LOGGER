@@ -5,38 +5,34 @@
 #ifndef SDIOLOGWRAPPER
 #define SDIOLOGWRAPPER
 
-const int SDIO_CH_DATA_SIZE = 128; // CHANGE this via (logdata size)/(logging 1 clk)
-
-/*
-    mXXX: mediation
-*/
+#define SDIO_CH_DATA_SIZE 128
+#define fileName "/test.txt"
 
 class SDIOLogWrapper
 {
 private:
-    bool isSDOpend = 0;
-    const char *fileName;
-    File logFile;
-    const int logCounterMax = 1024;
-
-    QueueHandle_t xQueue;
-
-    TaskHandle_t xWriteSDHandle;
+    static bool isSDOpend;
+    static File logFile;
+    static QueueHandle_t xQueue;
+    static TaskHandle_t xWriteSDHandle;
 
 public:
-    int initSD();
-    void deinitSD();
+    static const int logCounterMax;
 
-    void openFile(const char mfileName[]);
-    void writeFile(const char mData[]);
-    void closeFile();
+public:
+    static int initSD();
+    static void deinitSD();
 
-    int makeQueue(int uxQueueLength);
-    int appendQueue(char xData[SDIO_CH_DATA_SIZE]);
-    void deleteQueue();
+    static void openFile();
+    static void writeFile(const char mData[]);
+    static void closeFile();
 
-    // static void writeSDfromQueue(void *parameters);
-    // void writeTaskCreate(int TaskExecuteCore);
-    void writeTaskDelete();
+    static int makeQueue(int uxQueueLength);
+    static int appendQueue(char xData[SDIO_CH_DATA_SIZE]);
+    static void deleteQueue();
+
+    static void writeSDfromQueue(void *parameters);
+    static void writeTaskCreate(int TaskExecuteCore);
+    static void writeTaskDelete();
 };
 #endif

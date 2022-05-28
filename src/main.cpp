@@ -20,7 +20,6 @@ QueueHandle_t xQueue;
 
 xTaskHandle xlogHandle;
 
-/*
 IRAM_ATTR void logging(void *parameters)
 {
   portTickType xLastWakeTime = xTaskGetTickCount();
@@ -41,24 +40,16 @@ IRAM_ATTR void logging(void *parameters)
     {
       sprintf(bfChar, "%s,%d", bfChar, adcData[i]);
     }
-    sprintf(bfChar, "%s\n", bfChar);
 
-    if (uxQueueSpacesAvailable(xQueue) > 0)
+    if (SDIO.appendQueue(bfChar) == 1)
     {
-      // send queue
-      xQueueSend(xQueue, &bfChar, 0);
-    }
-    else
-    {
-      // stop logging
-      Serial.println("queue filled!!!");
-      vTaskDelete(xlogHandle);
+      vTaskDelete(&xlogHandle);
+      ESP.restart();
     }
 
     vTaskDelayUntil(&xLastWakeTime, loggingPeriod / portTICK_PERIOD_MS);
   }
 }
-*/
 
 void setup()
 {
@@ -68,8 +59,6 @@ void setup()
   SPIC1.begin(VSPI, SCK1, MISO1, MOSI1);
   mcp3208_0.begin(&SPIC1, MCPCS1, 10000000);
   mcp3208_1.begin(&SPIC1, MCPCS2, 10000000);
-
-  SDIO.makeQueue(128);
 }
 
 void loop()
@@ -86,27 +75,26 @@ void loop()
 
     if (cmd == 'a')
     {
-      Serial.printf("SD init result: %d\n", SDIO.initSD());
-      SDIO.openFile("/test.txt");
-      // SDIO.writeTaskCreate(APP_CPU_NUM);
-    }
+      SDIO.makeQueue(128);
 
-    if (cmd == 's')
-    {
-      char data[128] = "";
-      for (int i = 0; i < 100; i++)
-      {
-        sprintf(data, "%s%s", data, "a");
-      }
-      SDIO.appendQueue(data);
+      Serial.printf("SD init result: %d\n", SDIO.initSD());
+      SDIO.openFile();
+      SDIO.writeTaskCreate(APP_CPU_NUM);
+      xTaskCreateUniversal(logging, "logging", 8192, NULL, 1, &xlogHandle, PRO_CPU_NUM);
     }
 
     if (cmd == 'g')
     {
+      vTaskDelete(xlogHandle);
+      Serial.printf("logtask killed\n");
+      delay(1000);
       SDIO.writeTaskDelete();
+      Serial.printf("writetask killed\n");
       SDIO.closeFile();
+      Serial.printf("file closed\n");
       SDIO.deinitSD();
+      Serial.printf("sd deinitted\n");
     }
   }
-  delay(1000);
+  delay(10);
 }
