@@ -59,6 +59,8 @@ void setup()
   SPIC1.begin(VSPI, SCK1, MISO1, MOSI1);
   mcp3208_0.begin(&SPIC1, MCPCS1, 10000000);
   mcp3208_1.begin(&SPIC1, MCPCS2, 10000000);
+
+  SDIO.makeQueue(128);
 }
 
 void loop()
@@ -75,8 +77,6 @@ void loop()
 
     if (cmd == 'a')
     {
-      SDIO.makeQueue(128);
-
       Serial.printf("SD init result: %d\n", SDIO.initSD());
       SDIO.openFile();
       SDIO.writeTaskCreate(APP_CPU_NUM);

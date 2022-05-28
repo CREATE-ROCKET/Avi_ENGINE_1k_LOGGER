@@ -1,6 +1,6 @@
 #include "SDIOLogWrapper.h"
 
-bool SDIOLogWrapper::isSDOpend;
+bool SDIOLogWrapper::isSDOpend = 0;
 File SDIOLogWrapper::logFile;
 QueueHandle_t SDIOLogWrapper::xQueue;
 TaskHandle_t SDIOLogWrapper::xWriteSDHandle;
@@ -29,7 +29,7 @@ void SDIOLogWrapper::deinitSD()
 
 void SDIOLogWrapper::openFile()
 {
-    logFile = SD_MMC.open(fileName, FILE_APPEND);
+    logFile = SD_MMC.open(SDIO_FILE_NAME, FILE_APPEND);
 }
 
 void SDIOLogWrapper::writeFile(const char mData[])
@@ -87,7 +87,7 @@ IRAM_ATTR void SDIOLogWrapper::writeSDfromQueue(void *parameters)
                 logCounter = 0;
                 logFile.close();
                 logFile = SD_MMC.open(
-                    fileName, FILE_APPEND);
+                    SDIO_FILE_NAME, FILE_APPEND);
             }
         }
         else

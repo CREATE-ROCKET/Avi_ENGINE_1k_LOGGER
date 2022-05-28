@@ -6,7 +6,7 @@
 #define SDIOLOGWRAPPER
 
 #define SDIO_CH_DATA_SIZE 128
-#define fileName "/test.txt"
+#define SDIO_FILE_NAME "/test.txt"
 
 class SDIOLogWrapper
 {
