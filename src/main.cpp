@@ -16,7 +16,6 @@ MCP mcp3208_0;
 MCP mcp3208_1;
 
 SDIOLogWrapper SDIO;
-QueueHandle_t xQueue;
 
 xTaskHandle xlogHandle;
 
@@ -25,9 +24,11 @@ IRAM_ATTR void logging(void *parameters)
   portTickType xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
-    uint32_t startTime = micros();
     uint16_t adcData[16];
     char bfChar[128] = "";
+    uint8_t xQueueWaitCount = SDIO.countWaitingQueue();
+
+    uint32_t startTime = micros();
 
     for (int i = 0; i < 8; i++)
     {
@@ -35,15 +36,20 @@ IRAM_ATTR void logging(void *parameters)
       adcData[8 + i] = mcp3208_1.Get(i);
     }
 
-    sprintf(bfChar, "%d", startTime);
+    uint32_t stopTime = micros();
+
+    sprintf(bfChar, "%d,%d,%d,", xQueueWaitCount, startTime, stopTime);
     for (int i = 0; i < 16; i++)
     {
-      sprintf(bfChar, "%s,%d", bfChar, adcData[i]);
+      sprintf(bfChar, "%s%d,", bfChar, adcData[i]);
     }
+
+    sprintf(bfChar, "%s\n", bfChar);
 
     if (SDIO.appendQueue(bfChar) == 1)
     {
       vTaskDelete(&xlogHandle);
+      Serial.println("queue filled!");
       ESP.restart();
     }
 
@@ -57,10 +63,10 @@ void setup()
   Serial.begin(115200);
   pinMode(LED, OUTPUT);
   SPIC1.begin(VSPI, SCK1, MISO1, MOSI1);
-  mcp3208_0.begin(&SPIC1, MCPCS1, 10000000);
-  mcp3208_1.begin(&SPIC1, MCPCS2, 10000000);
+  mcp3208_0.begin(&SPIC1, MCPCS1, 6000000);
+  mcp3208_1.begin(&SPIC1, MCPCS2, 6000000);
 
-  SDIO.makeQueue(128);
+  SDIO.makeQueue(64, 128);
 }
 
 void loop()
@@ -86,15 +92,11 @@ void loop()
     if (cmd == 'g')
     {
       vTaskDelete(xlogHandle);
-      Serial.printf("logtask killed\n");
       delay(1000);
       SDIO.writeTaskDelete();
-      Serial.printf("writetask killed\n");
       SDIO.closeFile();
-      Serial.printf("file closed\n");
       SDIO.deinitSD();
-      Serial.printf("sd deinitted\n");
     }
   }
-  delay(10);
+  delay(100);
 }

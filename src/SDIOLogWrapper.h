@@ -1,23 +1,19 @@
-#include <Arduino.h>
 #include <FS.h>
 #include <SD_MMC.h>
 
 #ifndef SDIOLOGWRAPPER
 #define SDIOLOGWRAPPER
 
-#define SDIO_CH_DATA_SIZE 128
-#define SDIO_FILE_NAME "/test.txt"
-
 class SDIOLogWrapper
 {
 private:
     static bool isSDOpend;
     static File logFile;
-    static QueueHandle_t xQueue;
     static TaskHandle_t xWriteSDHandle;
-
-public:
-    static const int logCounterMax;
+    static const char fileName[32];
+    static int xQueueSize;
+    static QueueHandle_t xQueue;
+    static int logCounterMax;
 
 public:
     static int initSD();
@@ -27,11 +23,14 @@ public:
     static void writeFile(const char mData[]);
     static void closeFile();
 
-    static int makeQueue(int uxQueueLength);
-    static int appendQueue(char xData[SDIO_CH_DATA_SIZE]);
+    static int makeQueue(int uxQueueLength, int uxQueueSize);
+    static int appendQueue(char xData[]);
+    static int countWaitingQueue();
     static void deleteQueue();
 
     static void writeSDfromQueue(void *parameters);
+
+    static void setSaveInterval(int interval);
     static void writeTaskCreate(int TaskExecuteCore);
     static void writeTaskDelete();
 };

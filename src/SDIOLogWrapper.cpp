@@ -4,8 +4,9 @@ bool SDIOLogWrapper::isSDOpend = 0;
 File SDIOLogWrapper::logFile;
 QueueHandle_t SDIOLogWrapper::xQueue;
 TaskHandle_t SDIOLogWrapper::xWriteSDHandle;
-
-const int SDIOLogWrapper::logCounterMax = 1024;
+int SDIOLogWrapper::logCounterMax = 1024;
+int SDIOLogWrapper::xQueueSize;
+const char SDIOLogWrapper::fileName[32] = "/logger.csv";
 
 int SDIOLogWrapper::initSD()
 {
@@ -29,7 +30,8 @@ void SDIOLogWrapper::deinitSD()
 
 void SDIOLogWrapper::openFile()
 {
-    logFile = SD_MMC.open(SDIO_FILE_NAME, FILE_APPEND);
+    printf("file:%s", fileName);
+    logFile = SD_MMC.open(fileName, FILE_APPEND);
 }
 
 void SDIOLogWrapper::writeFile(const char mData[])
@@ -42,9 +44,10 @@ void SDIOLogWrapper::closeFile()
     logFile.close();
 }
 
-int SDIOLogWrapper::makeQueue(int uxQueueLength)
+int SDIOLogWrapper::makeQueue(int uxQueueLength, int uxQueueSize)
 {
-    xQueue = xQueueCreate(uxQueueLength, SDIO_CH_DATA_SIZE * sizeof(char));
+    xQueueSize = uxQueueSize;
+    xQueue = xQueueCreate(uxQueueLength, xQueueSize * sizeof(char));
 
     if (xQueue == NULL)
     {
@@ -58,7 +61,12 @@ void SDIOLogWrapper::deleteQueue()
     vQueueDelete(xQueue);
 }
 
-IRAM_ATTR int SDIOLogWrapper::appendQueue(char xData[SDIO_CH_DATA_SIZE])
+IRAM_ATTR int SDIOLogWrapper::countWaitingQueue()
+{
+    return uxQueueMessagesWaiting(xQueue);
+}
+
+IRAM_ATTR int SDIOLogWrapper::appendQueue(char xData[])
 {
     if (uxQueueSpacesAvailable(xQueue) < 1)
     {
@@ -75,11 +83,10 @@ IRAM_ATTR void SDIOLogWrapper::writeSDfromQueue(void *parameters)
 {
     for (;;)
     {
-        char data[SDIO_CH_DATA_SIZE];
+        char data[xQueueSize];
         int logCounter = 0;
         if (xQueueReceive(xQueue, &data, 0) == pdTRUE)
         {
-            sprintf(data, "%s,%d\n", data, uxQueueMessagesWaiting(xQueue));
             logFile.print(data);
             logCounter++;
             if (logCounter == logCounterMax)
@@ -87,7 +94,7 @@ IRAM_ATTR void SDIOLogWrapper::writeSDfromQueue(void *parameters)
                 logCounter = 0;
                 logFile.close();
                 logFile = SD_MMC.open(
-                    SDIO_FILE_NAME, FILE_APPEND);
+                    fileName, FILE_APPEND);
             }
         }
         else
@@ -95,6 +102,11 @@ IRAM_ATTR void SDIOLogWrapper::writeSDfromQueue(void *parameters)
             delay(1);
         }
     }
+}
+
+void SDIOLogWrapper::setSaveInterval(int interval)
+{
+    logCounterMax = interval;
 }
 
 void SDIOLogWrapper::writeTaskCreate(int TaskExecuteCore)
