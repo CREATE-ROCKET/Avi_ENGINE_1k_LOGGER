@@ -1,7 +1,8 @@
 #include <Arduino.h>
 #include <SPICREATE.h>
 #include <mcp3208.h>
-#include <SDIOLogWrapper.h>
+#include <SDIOLogWrapper.hpp>
+#include <SDIOLogWrapper.hpp>
 
 #define SCK1 33
 #define MISO1 25
@@ -9,13 +10,11 @@
 #define MCPCS1 27
 #define MCPCS2 32
 #define LED 19
-#define loggingPeriod 1
+#define LOGGINGINTERVAL 1
 
 SPICREATE::SPICreate SPIC1;
 MCP mcp3208_0;
 MCP mcp3208_1;
-
-SDIOLogWrapper SDIO;
 
 xTaskHandle xlogHandle;
 
@@ -26,7 +25,7 @@ IRAM_ATTR void logging(void *parameters)
   {
     uint16_t adcData[16];
     char bfChar[128] = "";
-    uint8_t xQueueWaitCount = SDIO.countWaitingQueue();
+    uint8_t xQueueWaitCount = SDIOLogWrapper::countWaitingQueue();
 
     uint32_t startTime = micros();
 
@@ -46,14 +45,14 @@ IRAM_ATTR void logging(void *parameters)
 
     sprintf(bfChar, "%s\n", bfChar);
 
-    if (SDIO.appendQueue(bfChar) == 1)
+    if (SDIOLogWrapper::appendQueue(bfChar) == 1)
     {
       vTaskDelete(&xlogHandle);
       Serial.println("queue filled!");
       ESP.restart();
     }
 
-    vTaskDelayUntil(&xLastWakeTime, loggingPeriod / portTICK_PERIOD_MS);
+    vTaskDelayUntil(&xLastWakeTime, LOGGINGINTERVAL / portTICK_PERIOD_MS);
   }
 }
 
@@ -66,7 +65,9 @@ void setup()
   mcp3208_0.begin(&SPIC1, MCPCS1, 6000000);
   mcp3208_1.begin(&SPIC1, MCPCS2, 6000000);
 
-  SDIO.makeQueue(64, 128);
+  SDIOLogWrapper::makeQueue(64, 128);
+  SDIOLogWrapper::setSaveFileName("/aiueo.csv");
+  SDIOLogWrapper::setSaveInterval(100);
 }
 
 void loop()
@@ -83,9 +84,9 @@ void loop()
 
     if (cmd == 'a')
     {
-      Serial.printf("SD init result: %d\n", SDIO.initSD());
-      SDIO.openFile();
-      SDIO.writeTaskCreate(APP_CPU_NUM);
+      Serial.printf("SD init result: %d\n", SDIOLogWrapper::initSD());
+      SDIOLogWrapper::openFile();
+      SDIOLogWrapper::writeTaskCreate(APP_CPU_NUM);
       xTaskCreateUniversal(logging, "logging", 8192, NULL, 1, &xlogHandle, PRO_CPU_NUM);
     }
 
@@ -93,9 +94,9 @@ void loop()
     {
       vTaskDelete(xlogHandle);
       delay(1000);
-      SDIO.writeTaskDelete();
-      SDIO.closeFile();
-      SDIO.deinitSD();
+      SDIOLogWrapper::writeTaskDelete();
+      SDIOLogWrapper::closeFile();
+      SDIOLogWrapper::deinitSD();
     }
   }
   delay(100);
