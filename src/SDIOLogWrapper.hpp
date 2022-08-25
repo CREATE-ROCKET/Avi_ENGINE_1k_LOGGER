@@ -10,7 +10,6 @@ namespace SDIOLogWrapper
     File logFile;
     TaskHandle_t xWriteSDHandle;
     const char *fileName = "/logger.csv";
-    int xQueueSize = 128;
     QueueHandle_t xQueue;
     int SaveInterval = 128;
 
@@ -23,7 +22,7 @@ namespace SDIOLogWrapper
     void writeFile(const char mData[]);
     void closeFile();
 
-    int makeQueue(int uxQueueLength, int uxQueueSize);
+    int makeQueue(int uxQueueLength);
     int appendQueue(char xData[]);
     int countWaitingQueue();
     void deleteQueue();
@@ -75,10 +74,9 @@ namespace SDIOLogWrapper
         logFile.close();
     }
 
-    int makeQueue(int uxQueueLength, int uxQueueSize)
+    int makeQueue(int uxQueueLength)
     {
-        xQueueSize = uxQueueSize;
-        xQueue = xQueueCreate(uxQueueLength, xQueueSize * sizeof(char));
+        xQueue = xQueueCreate(uxQueueLength, sizeof(char *));
 
         if (xQueue == NULL)
         {
@@ -97,7 +95,7 @@ namespace SDIOLogWrapper
         return uxQueueMessagesWaiting(xQueue);
     }
 
-    IRAM_ATTR int appendQueue(char xData[])
+    IRAM_ATTR int appendQueue(char *xData)
     {
         if (uxQueueSpacesAvailable(xQueue) < 1)
         {
@@ -105,7 +103,7 @@ namespace SDIOLogWrapper
         }
         else
         {
-            xQueueSend(xQueue, xData, 0);
+            xQueueSend(xQueue, &xData, 0);
         }
         return 0;
     }
@@ -114,11 +112,12 @@ namespace SDIOLogWrapper
     {
         for (;;)
         {
-            char data[xQueueSize];
+            char *data;
             int logCounter = 0;
             if (xQueueReceive(xQueue, &data, 0) == pdTRUE)
             {
                 logFile.print(data);
+                delete[] data;
                 logCounter++;
                 if (logCounter == SaveInterval)
                 {
@@ -142,7 +141,7 @@ namespace SDIOLogWrapper
 
     void writeTaskCreate(int TaskExecuteCore)
     {
-        xTaskCreateUniversal(writeSDfromQueue, "Queue2SD", 8192, NULL, 1, &xWriteSDHandle, TaskExecuteCore);
+        xTaskCreateUniversal(writeSDfromQueue, "Queue2SD", 8192, NULL, configMAX_PRIORITIES, &xWriteSDHandle, TaskExecuteCore);
     }
 
     void writeTaskDelete()

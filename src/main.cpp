@@ -12,6 +12,8 @@
 #define LED 19
 #define LOGGINGINTERVAL 1
 
+#define QUEUESTRINGSIZE 128
+
 SPICREATE::SPICreate SPIC1;
 MCP mcp3208_0;
 MCP mcp3208_1;
@@ -24,7 +26,8 @@ IRAM_ATTR void logging(void *parameters)
   for (;;)
   {
     uint16_t adcData[16];
-    char bfChar[128] = "";
+    char *bfChar = new char[QUEUESTRINGSIZE];
+    bfChar[0] = '\0';
     uint8_t xQueueWaitCount = SDIOLogWrapper::countWaitingQueue();
 
     uint32_t startTime = micros();
@@ -65,7 +68,7 @@ void setup()
   mcp3208_0.begin(&SPIC1, MCPCS1, 6000000);
   mcp3208_1.begin(&SPIC1, MCPCS2, 6000000);
 
-  SDIOLogWrapper::makeQueue(64, 128);
+  SDIOLogWrapper::makeQueue(128);
   SDIOLogWrapper::setSaveFileName("/aiueo.csv");
   SDIOLogWrapper::setSaveInterval(100);
 }
@@ -87,7 +90,7 @@ void loop()
       Serial.printf("SD init result: %d\n", SDIOLogWrapper::initSD());
       SDIOLogWrapper::openFile();
       SDIOLogWrapper::writeTaskCreate(APP_CPU_NUM);
-      xTaskCreateUniversal(logging, "logging", 8192, NULL, 1, &xlogHandle, PRO_CPU_NUM);
+      xTaskCreateUniversal(logging, "logging", 8192, NULL, configMAX_PRIORITIES, &xlogHandle, PRO_CPU_NUM);
     }
 
     if (cmd == 'g')
