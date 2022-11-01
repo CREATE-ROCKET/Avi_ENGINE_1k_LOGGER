@@ -27,32 +27,35 @@ IRAM_ATTR void logging(void *parameters)
   {
     uint16_t adcData[16];
     char *bfChar = new char[QUEUESTRINGSIZE];
-    bfChar[0] = '\0';
-    uint8_t xQueueWaitCount = SDIOLogWrapper::countWaitingQueue();
-
-    uint32_t startTime = micros();
-
-    for (int i = 0; i < 8; i++)
+    if (bfChar != NULL)
     {
-      adcData[i] = mcp3208_0.Get(i);
-      adcData[8 + i] = mcp3208_1.Get(i);
-    }
+      bfChar[0] = '\0';
+      uint8_t xQueueWaitCount = SDIOLogWrapper::countWaitingQueue();
 
-    uint32_t stopTime = micros();
+      uint32_t startTime = micros();
 
-    sprintf(bfChar, "%d,%d,%d,", xQueueWaitCount, startTime, stopTime);
-    for (int i = 0; i < 16; i++)
-    {
-      sprintf(bfChar, "%s%d,", bfChar, adcData[i]);
-    }
+      for (int i = 0; i < 8; i++)
+      {
+        adcData[i] = mcp3208_0.Get(i);
+        adcData[8 + i] = mcp3208_1.Get(i);
+      }
 
-    sprintf(bfChar, "%s\n", bfChar);
+      uint32_t stopTime = micros();
 
-    if (SDIOLogWrapper::appendQueue(bfChar) == 1)
-    {
-      vTaskDelete(&xlogHandle);
-      Serial.println("queue filled!");
-      ESP.restart();
+      sprintf(bfChar, "%d,%d,%d,", xQueueWaitCount, startTime, stopTime);
+      for (int i = 0; i < 16; i++)
+      {
+        sprintf(bfChar, "%s%d,", bfChar, adcData[i]);
+      }
+
+      sprintf(bfChar, "%s\n", bfChar);
+
+      if (SDIOLogWrapper::appendQueue(bfChar) == 1)
+      {
+        vTaskDelete(&xlogHandle);
+        Serial.println("queue filled!");
+        ESP.restart();
+      }
     }
 
     vTaskDelayUntil(&xLastWakeTime, LOGGINGINTERVAL / portTICK_PERIOD_MS);
@@ -67,10 +70,6 @@ void setup()
   SPIC1.begin(VSPI, SCK1, MISO1, MOSI1);
   mcp3208_0.begin(&SPIC1, MCPCS1, 6000000);
   mcp3208_1.begin(&SPIC1, MCPCS2, 6000000);
-
-  SDIOLogWrapper::makeQueue(128);
-  SDIOLogWrapper::setSaveFileName("/aiueo.csv");
-  SDIOLogWrapper::setSaveInterval(100);
 }
 
 void loop()
@@ -87,6 +86,10 @@ void loop()
 
     if (cmd == 'a')
     {
+      SDIOLogWrapper::makeQueue(128);
+      SDIOLogWrapper::setSaveFileName("/aiueo.csv");
+      SDIOLogWrapper::setSaveInterval(100);
+
       Serial.printf("SD init result: %d\n", SDIOLogWrapper::initSD());
       SDIOLogWrapper::openFile();
       SDIOLogWrapper::writeTaskCreate(APP_CPU_NUM);
@@ -98,6 +101,7 @@ void loop()
       vTaskDelete(xlogHandle);
       delay(1000);
       SDIOLogWrapper::writeTaskDelete();
+      SDIOLogWrapper::deleteQueue();
       SDIOLogWrapper::closeFile();
       SDIOLogWrapper::deinitSD();
     }
