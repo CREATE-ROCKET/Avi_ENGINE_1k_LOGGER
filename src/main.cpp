@@ -52,9 +52,7 @@ IRAM_ATTR void logging(void *parameters)
 
       if (SDIOLogWrapper::appendQueue(bfChar) == 1)
       {
-        vTaskDelete(&xlogHandle);
         Serial.println("queue filled!");
-        ESP.restart();
       }
     }
 
@@ -101,6 +99,7 @@ void loop()
       vTaskDelete(xlogHandle);
       delay(1000);
       SDIOLogWrapper::writeTaskDelete();
+      Serial.println("logTask killed");
       SDIOLogWrapper::deleteQueue();
       SDIOLogWrapper::closeFile();
       SDIOLogWrapper::deinitSD();
