@@ -7,8 +7,8 @@
 #define SCK1 33
 #define MISO1 25
 #define MOSI1 26
-#define MCPCS1 27
-#define MCPCS2 32
+#define MCPCS1 32
+#define MCPCS2 27
 #define LED 19
 #define LOGGINGINTERVAL 1
 
@@ -19,6 +19,7 @@ MCP mcp3208_0;
 MCP mcp3208_1;
 
 xTaskHandle xlogHandle;
+uint8_t isLoggintGoing = 0;
 
 IRAM_ATTR void logging(void *parameters)
 {
@@ -65,6 +66,7 @@ void setup()
   // io init
   Serial.begin(115200);
   pinMode(LED, OUTPUT);
+  pinMode(21, INPUT_PULLDOWN);
   SPIC1.begin(VSPI, SCK1, MISO1, MOSI1);
   mcp3208_0.begin(&SPIC1, MCPCS1, 6000000);
   mcp3208_1.begin(&SPIC1, MCPCS2, 6000000);
@@ -73,37 +75,31 @@ void setup()
 void loop()
 {
   // put your main code here, to run repeatedly:
-  while (Serial.available())
+
+  if ((digitalRead(21) == HIGH) && (isLoggintGoing == 0))
   {
-    char cmd = Serial.read();
+    isLoggintGoing = 1;
+    SDIOLogWrapper::makeQueue(128);
+    SDIOLogWrapper::setSaveFileName("/aiueo.csv");
+    SDIOLogWrapper::setSaveInterval(100);
 
-    if (cmd == 'r')
-    {
-      ESP.restart();
-    }
-
-    if (cmd == 'a')
-    {
-      SDIOLogWrapper::makeQueue(128);
-      SDIOLogWrapper::setSaveFileName("/aiueo.csv");
-      SDIOLogWrapper::setSaveInterval(100);
-
-      Serial.printf("SD init result: %d\n", SDIOLogWrapper::initSD());
-      SDIOLogWrapper::openFile();
-      SDIOLogWrapper::writeTaskCreate(APP_CPU_NUM);
-      xTaskCreateUniversal(logging, "logging", 8192, NULL, configMAX_PRIORITIES, &xlogHandle, PRO_CPU_NUM);
-    }
-
-    if (cmd == 'g')
-    {
-      vTaskDelete(xlogHandle);
-      delay(1000);
-      SDIOLogWrapper::writeTaskDelete();
-      Serial.println("logTask killed");
-      SDIOLogWrapper::deleteQueue();
-      SDIOLogWrapper::closeFile();
-      SDIOLogWrapper::deinitSD();
-    }
+    Serial.printf("SD init result: %d\n", SDIOLogWrapper::initSD());
+    SDIOLogWrapper::openFile();
+    SDIOLogWrapper::writeTaskCreate(APP_CPU_NUM);
+    xTaskCreateUniversal(logging, "logging", 8192, NULL, configMAX_PRIORITIES, &xlogHandle, PRO_CPU_NUM);
   }
-  delay(100);
+
+  delay(1000);
+
+  if ((digitalRead(21) == LOW) && (isLoggintGoing == 1))
+  {
+    vTaskDelete(xlogHandle);
+    delay(1000);
+    SDIOLogWrapper::writeTaskDelete();
+    Serial.println("logTask killed");
+    SDIOLogWrapper::deleteQueue();
+    SDIOLogWrapper::closeFile();
+    SDIOLogWrapper::deinitSD();
+    isLoggintGoing = 0;
+  }
 }
