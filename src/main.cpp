@@ -9,7 +9,7 @@
 #define MOSI1 26
 #define MCPCS1 32
 #define MCPCS2 27
-#define LED 19
+#define LED_ERR 19
 #define LOGGINGINTERVAL 1
 
 #define QUEUESTRINGSIZE 128
@@ -65,8 +65,9 @@ void setup()
 {
   // io init
   Serial.begin(115200);
-  pinMode(LED, OUTPUT);
+  pinMode(LED_ERR, OUTPUT);
   pinMode(21, INPUT_PULLDOWN);
+  digitalWrite(LED_ERR, HIGH);
   SPIC1.begin(VSPI, SCK1, MISO1, MOSI1);
   mcp3208_0.begin(&SPIC1, MCPCS1, 6000000);
   mcp3208_1.begin(&SPIC1, MCPCS2, 6000000);
@@ -78,6 +79,7 @@ void loop()
 
   if ((digitalRead(21) == HIGH) && (isLoggintGoing == 0))
   {
+    digitalWrite(LED_ERR, LOW);
     isLoggintGoing = 1;
     SDIOLogWrapper::makeQueue(128);
     SDIOLogWrapper::setSaveFileName("/aiueo.csv");
@@ -93,6 +95,7 @@ void loop()
 
   if ((digitalRead(21) == LOW) && (isLoggintGoing == 1))
   {
+    digitalWrite(LED_ERR, HIGH);
     vTaskDelete(xlogHandle);
     delay(1000);
     SDIOLogWrapper::writeTaskDelete();
@@ -102,4 +105,5 @@ void loop()
     SDIOLogWrapper::deinitSD();
     isLoggintGoing = 0;
   }
+  delay(1000);
 }
