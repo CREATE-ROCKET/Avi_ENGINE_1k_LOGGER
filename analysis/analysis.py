@@ -14,7 +14,7 @@ def main(source,target):
              writer.writerow(['書き込み待ちデータ数','データ取得開始時','データ取得終了時','推力[N]','圧力1[Pa]','圧力2[Pa]','圧力3[Pa]','圧力4[Pa]','高域温度1','高域温度2','低域温度1','低域温度2','低域温度3'])
              for row in tqdm(reader):
                 # 1行ずつ読み込み
-                writer.writerow([row[0],row[1],row[2],str(bin2Thrust(int(row[3]))),str(bin2dataPressure(int(row[5]))),str(bin2dataPressure(int(row[6]))),str(bin2dataPressure(int(row[7]))),str(bin2dataPressure(int(row[8]))),str(bin2dataTempHigh(int(row[11]))),str(bin2dataTempHigh(int(row[12]))),str(bin2dataTempLow(int(row[13]))),str(bin2dataTempLow(int(row[14]))),str(bin2dataTempLow(int(row[15])))])
+                writer.writerow([row[0],row[1],row[2],str(bin2ThrustTest2(int(row[3]))),str(bin2dataPressure(int(row[5]))),str(bin2dataPressure(int(row[6]))),str(bin2dataPressure(int(row[7]))),str(bin2dataPressure(int(row[8]))),str(bin2dataTempHigh(int(row[11]))),str(bin2dataTempHigh(int(row[12]))),str(bin2dataTempLow(int(row[13]))),str(bin2dataTempLow(int(row[14]))),str(bin2dataTempLow(int(row[15])))])
             
     
 
@@ -33,8 +33,11 @@ def bin2Thrust(binary):
 実験値
 ADCの値 x に対して，力 y[N] は，y = 0.5952 * x - 20.177
 '''
-def bin2ThrustTest(binary):
+def bin2ThrustTest1(binary):
     return 0.5952 * binary - 20.177
+
+def bin2ThrustTest2(binary):
+    return 0.5807 * binary - 24.098
 
 
 def bin2dataPressure(binary):
