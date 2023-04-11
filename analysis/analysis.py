@@ -6,6 +6,8 @@ import sys
 from tqdm import tqdm
 import math
 
+voltageref5v = 5.1
+
 def main(source,target):
     with open(source) as fr:
         reader = csv.reader(fr)
@@ -19,7 +21,7 @@ def main(source,target):
     
 
 def bin2ADCvoltage(binary):
-    return 5.1 * float(binary) / 4096
+    return voltageref5v * float(binary) / 4096
 
 '''
 理論値
@@ -27,7 +29,7 @@ def bin2ADCvoltage(binary):
 '''
 def bin2Thrust(binary):
     sensorOutputVoltage = bin2ADCvoltage(binary)/47.0
-    return 1112.06 * sensorOutputVoltage / (5.1 * 20.0 * 1e-3) # N
+    return 1112.06 * sensorOutputVoltage / (voltageref5v * 20.0 * 1e-3) # N
 
 '''
 実験値
@@ -53,11 +55,25 @@ def bin2dataTempLow(binary):
     return bin2dataTemp(binary,R)
 
 def bin2dataTemp(binary,R):
+    # サーミスタの抵抗値を計算
+    v = bin2ADCvoltage(binary)
+    R_T = R * v / (voltageref5v -v)
+
+    # サーミスタの抵抗値から温度を計算
+    B = 3435 # B係数
+    R0 = 10000
+    T0 = 25 + 273.15
+
+    T = 1/(1/B * math.log(R_T/R0)+ 1/T0)
+    T -= 273.15
+
+'''
+def bin2dataTemp(binary,R):
     if(binary == 0):
         return -273
     Voltage = bin2ADCvoltage(binary)
     return 1/(1/(25+273)+math.log(((Voltage/(5.1-Voltage))*R)/10000)/4126)-273
-
+'''
 
 if __name__ == "__main__":
     args = sys.argv
