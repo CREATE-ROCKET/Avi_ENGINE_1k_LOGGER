@@ -10,6 +10,7 @@
 #define MCPCS1 32
 #define MCPCS2 27
 #define LED_ERR 19
+#define VALVE_BRD_STAT 18
 #define LOGGINGINTERVAL 1
 
 #define QUEUESTRINGSIZE 128
@@ -48,8 +49,7 @@ IRAM_ATTR void logging(void *parameters)
       {
         sprintf(bfChar, "%s%d,", bfChar, adcData[i]);
       }
-
-      sprintf(bfChar, "%s\n", bfChar);
+      sprintf(bfChar, "%s%d\n", bfChar, digitalRead(VALVE_BRD_STAT));
 
       if (SDIOLogWrapper::appendQueue(bfChar) == 1)
       {
@@ -67,6 +67,7 @@ void setup()
   Serial.begin(115200);
   pinMode(LED_ERR, OUTPUT);
   pinMode(21, INPUT_PULLDOWN);
+  pinMode(VALVE_BRD_STAT,INPUT_PULLUP);
   digitalWrite(LED_ERR, HIGH);
   SPIC1.begin(VSPI, SCK1, MISO1, MOSI1);
   mcp3208_0.begin(&SPIC1, MCPCS1, 6000000);
