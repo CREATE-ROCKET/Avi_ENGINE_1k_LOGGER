@@ -32,3 +32,7 @@
 
 ## ADC
 [MCP3208-BI/SL](https://www.digikey.jp/en/products/detail/microchip-technology/MCP3208-BI-SL/319444)を使用
+
+# 解析プログラム
+
+`analysis/analysis.py` が解析プログラム。`analysis/analysis.py`が存在するディレクトリにて `python analysis.py <inputfile.csv> <outputfile.csv>`を実行。
