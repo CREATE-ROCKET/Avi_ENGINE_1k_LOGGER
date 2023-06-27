@@ -67,11 +67,13 @@ void setup()
   Serial.begin(115200);
   pinMode(LED_ERR, OUTPUT);
   pinMode(21, INPUT_PULLDOWN);
-  pinMode(VALVE_BRD_STAT,INPUT_PULLUP);
+  pinMode(VALVE_BRD_STAT, INPUT_PULLUP);
   digitalWrite(LED_ERR, HIGH);
   SPIC1.begin(VSPI, SCK1, MISO1, MOSI1);
   mcp3208_0.begin(&SPIC1, MCPCS1, 6000000);
   mcp3208_1.begin(&SPIC1, MCPCS2, 6000000);
+
+  SDIOLogWrapper::initfileNum();
 }
 
 void loop()
@@ -83,10 +85,9 @@ void loop()
     digitalWrite(LED_ERR, LOW);
     isLoggintGoing = 1;
     SDIOLogWrapper::makeQueue(128);
-    SDIOLogWrapper::setSaveFileName("/aiueo.csv");
-    SDIOLogWrapper::setSaveInterval(100);
+    SDIOLogWrapper::setSaveInterval(1024);
 
-    Serial.printf("SD init result: %d\n", SDIOLogWrapper::initSD());
+    Serial.printf("SD init result: %d\r\n", SDIOLogWrapper::initSD());
     SDIOLogWrapper::openFile();
     SDIOLogWrapper::writeTaskCreate(APP_CPU_NUM);
     xTaskCreateUniversal(logging, "logging", 8192, NULL, configMAX_PRIORITIES, &xlogHandle, PRO_CPU_NUM);

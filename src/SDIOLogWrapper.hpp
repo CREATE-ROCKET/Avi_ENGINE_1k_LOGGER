@@ -1,5 +1,6 @@
 #include <FS.h>
 #include <SD_MMC.h>
+#include <dirent.h>
 
 #ifndef SDIOLOGWRAPPER_H
 #define SDIOLOGWRAPPER_H
@@ -9,9 +10,10 @@ namespace SDIOLogWrapper
     bool isSDOpend = 0;
     File logFile;
     TaskHandle_t xWriteSDHandle;
-    const char *fileName = "/logger.csv";
+    uint32_t fileNum = 1;
+    char fileName[32] = "/LOG_0000001.csv";
     QueueHandle_t xQueue;
-    int SaveInterval = 128;
+    int SaveInterval = 1024;
 
     void setSaveFileName(const char *);
 
@@ -33,11 +35,6 @@ namespace SDIOLogWrapper
     void writeTaskCreate(int TaskExecuteCore);
     void writeTaskDelete();
 
-    void setSaveFileName(const char *_fileName)
-    {
-        fileName = _fileName;
-    }
-
     int initSD()
     {
         if (isSDOpend)
@@ -50,6 +47,31 @@ namespace SDIOLogWrapper
         }
         isSDOpend = 1;
         return 0;
+    }
+
+    void initfileNum()
+    {
+        initSD();
+        File root = SD_MMC.open("/");
+        uint32_t tmp_cntr = 0;
+        while (true)
+        {
+
+            File entry = root.openNextFile();
+            if (!entry)
+            {
+                // no more files
+                break;
+            }
+            tmp_cntr++;
+            entry.close();
+            NOP();
+        }
+        Serial.printf("fileCount:%d\r\n", tmp_cntr);
+        fileNum = tmp_cntr;
+        sprintf(fileName, "/LOG-%07d.csv", fileNum);
+        Serial.printf("new file name: %s\r\n", fileName);
+        deinitSD();
     }
 
     void deinitSD()
@@ -110,10 +132,10 @@ namespace SDIOLogWrapper
 
     IRAM_ATTR void writeSDfromQueue(void *parameters)
     {
+        int logCounter = 0;
         for (;;)
         {
             char *data;
-            int logCounter = 0;
             if (xQueueReceive(xQueue, &data, 0) == pdTRUE)
             {
                 logFile.print(data);
@@ -123,8 +145,11 @@ namespace SDIOLogWrapper
                 {
                     logCounter = 0;
                     logFile.close();
-                    logFile = SD_MMC.open(
-                        fileName, FILE_APPEND);
+                    // ログファイルディレクトリを更新
+                    fileNum++;
+                    sprintf(fileName, "/LOG-%07d.csv", fileNum);
+                    Serial.printf("new file name: %s\r\n", fileName);
+                    logFile = SD_MMC.open(fileName, FILE_APPEND);
                 }
             }
             else
