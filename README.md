@@ -35,4 +35,10 @@
 
 # 解析プログラム
 
-`analysis/analysis.py` が解析プログラム。`analysis/analysis.py`が存在するディレクトリにて `python analysis.py <inputfile.csv> <outputfile.csv>`を実行。
+以下コマンドで分割されたファイルを統合する。Linux上で実施する必要がある。
+
+```
+cat LOG-*.csv > merged_origine.csv
+```
+
+`analysis/analysis.py` が主解析プログラム。`analysis/analysis.py`が存在するディレクトリにて `python analysis.py <inputfile.csv> <outputfile.csv>`を実行。

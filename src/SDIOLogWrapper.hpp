@@ -109,6 +109,11 @@ namespace SDIOLogWrapper
 
     void deleteQueue()
     {
+        char *data;
+        while (xQueueReceive(xQueue, &data, 0) == pdTRUE)
+        {
+            delete[] data;
+        }
         vQueueDelete(xQueue);
     }
 
