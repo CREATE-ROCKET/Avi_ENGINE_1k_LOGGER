@@ -149,12 +149,7 @@ namespace SDIOLogWrapper
                 if (logCounter == SaveInterval)
                 {
                     logCounter = 0;
-                    logFile.close();
-                    // ログファイルディレクトリを更新
-                    fileNum++;
-                    sprintf(fileName, "/LOG-%07d.csv", fileNum);
-                    Serial.printf("new file name: %s\r\n", fileName);
-                    logFile = SD_MMC.open(fileName, FILE_APPEND);
+                    logFile.flush();
                 }
             }
             else

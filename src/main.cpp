@@ -32,7 +32,7 @@ IRAM_ATTR void logging(void *parameters)
     if (bfChar != NULL)
     {
       bfChar[0] = '\0';
-      uint8_t xQueueWaitCount = SDIOLogWrapper::countWaitingQueue();
+      uint16_t xQueueWaitCount = SDIOLogWrapper::countWaitingQueue();
 
       uint32_t startTime = micros();
 
@@ -53,7 +53,6 @@ IRAM_ATTR void logging(void *parameters)
 
       if (SDIOLogWrapper::appendQueue(bfChar) == 1)
       {
-        Serial.println("queue filled!");
         delete[] bfChar;
       }
     }
@@ -85,8 +84,8 @@ void loop()
   {
     digitalWrite(LED_ERR, LOW);
     isLoggintGoing = 1;
-    SDIOLogWrapper::makeQueue(256);
-    SDIOLogWrapper::setSaveInterval(8192);
+    SDIOLogWrapper::makeQueue(1024);
+    SDIOLogWrapper::setSaveInterval(1024);
 
     Serial.printf("SD init result: %d\r\n", SDIOLogWrapper::initSD());
     SDIOLogWrapper::openFile();
@@ -107,7 +106,6 @@ void loop()
     SDIOLogWrapper::closeFile();
     SDIOLogWrapper::deinitSD();
     isLoggintGoing = 0;
-    SDIOLogWrapper::fileNum++;
   }
   delay(1000);
 }
