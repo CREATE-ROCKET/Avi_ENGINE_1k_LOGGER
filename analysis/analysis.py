@@ -5,7 +5,7 @@ import csv
 import sys
 import math
 
-voltageref5v = 5.1
+voltageref5v = 4.99
 
 def main(source,target):
     with open(source) as fr:
