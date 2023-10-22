@@ -58,6 +58,9 @@ def bin2dataTemp(binary,R):
     v = bin2ADCvoltage(binary)
     R_T = R * v / (voltageref5v -v)
 
+    if R_T == 0:
+        return 0
+
     # サーミスタの抵抗値から温度を計算
     B = 3435 # B係数
     R0 = 10000
