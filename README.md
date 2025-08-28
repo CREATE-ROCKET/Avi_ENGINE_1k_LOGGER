@@ -59,3 +59,5 @@
 # 解析プログラム
 
 `analysis/analysis.py` が解析プログラム。`analysis/analysis.py`が存在するディレクトリにて `python analysis.py <inputfile.csv> <outputfile.csv>`を実行。
+
+colabなどのnotebookで実行できるようにした「燃焼実験ログをグラフに.ipynb」も同梱しました（宮田）
