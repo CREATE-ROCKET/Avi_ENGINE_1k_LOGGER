@@ -1,4 +1,6 @@
+#20251122追記：基本はこれを実行して得たファイルをグラフにするとよいです。
 #!/usr/bin/env python
+
 # -*- coding: utf-8 -*-
 
 import csv
@@ -15,8 +17,8 @@ def main(source,target):
              writer.writerow(['書き込み待ちデータ数','データ取得開始時','データ取得終了時','推力[N]','圧力1[Pa]','圧力2[Pa]','圧力3[Pa]','圧力4[Pa]','低域温度1','低域温度2','低域温度3','高域温度1','高域温度2'])
              for row in reader:
                 # 1行ずつ読み込み
-                writer.writerow([row[0],row[1],row[2],str(bin2ThrustTest2(int(row[3]))),str(bin2dataPressure(int(row[5]))),str(bin2dataPressure(int(row[6]))),str(bin2dataPressure(int(row[7]))),str(bin2dataPressure(int(row[8]))),str(bin2dataTempLow(int(row[11]))),str(bin2dataTempLow(int(row[12]))),str(bin2dataTempLow(int(row[13]))),str(bin2dataTempHigh(int(row[14]))),str(bin2dataTempHigh(int(row[15]))),row[19]])
-            
+                writer.writerow([row[0],row[1],row[2],str(bin2ThrustTest4(int(row[3]))),str(bin2dataPressure(int(row[5]))),str(bin2dataPressure(int(row[6]))),str(bin2dataPressure(int(row[7]))),str(bin2dataPressure(int(row[8]))),str(bin2dataTempLow(int(row[11]))),str(bin2dataTempLow(int(row[12]))),str(bin2dataTempLow2(int(row[13]))),str(bin2dataTempHigh(int(row[14]))),str(bin2dataTempHigh(int(row[15]))),row[19]])
+                #この行で使う関数を決めています。とくにbin2ThrustTestは1,2,3,4があり、1,2は旧ロードセル、3,4は新ロードセルに対応しています。
     
 
 def bin2ADCvoltage(binary):
@@ -37,21 +39,28 @@ ADCの値 x に対して，力 y[N] は，y = 0.5952 * x - 20.177
 def bin2ThrustTest1(binary):
     return 0.5952 * binary - 20.177
 
-def bin2ThrustTest2(binary):
+def bin2ThrustTest2(binary): #古いロードセルでやった時の校正値、こっちがbin2ThrustTest1より正確だと思われる
     return 0.5807 * binary - 24.098
-
+def bin2ThrustTest3(binary): #ナメた方法でやった時の校正値
+    return 2.4699*binary-126.66
+def bin2ThrustTest4(binary): #コンクリブロック法でやった時の校正値、こっちがbin2ThrustTest3より正確だと思われる
+    return 2.3896*binary-115.47
 
 def bin2dataPressure(binary):
     sensorOutputVoltage = 2.0 * bin2ADCvoltage(binary)
     return sensorOutputVoltage * 1e6 # Nm^-2
 
 def bin2dataTempHigh(binary):
-    R = 1000
+    R = 10000
     return bin2dataTemp(binary,R)
 
 def bin2dataTempLow(binary):
-    R = 10000
+    R = 100
     return bin2dataTemp(binary,R)
+
+def bin2dataTempLow2(binary):
+    R=100
+    return bin2dataTempNew(binary,R)
 
 def bin2dataTemp(binary,R):
     # サーミスタの抵抗値を計算
@@ -69,6 +78,22 @@ def bin2dataTemp(binary,R):
     T = 1/(1/B * math.log(R_T/R0)+ 1/T0)
     T -= 273.15
     return T
+def bin2dataTempNew(binary,R):
+    # サーミスタの抵抗値を計算
+    v = bin2ADCvoltage(binary)
+    R_T = R * v / (voltageref5v -v)
+
+    if R_T == 0:
+        return 0
+
+    # サーミスタの抵抗値から温度を計算
+    B = 4126 # B係数
+    R0 = 10000
+    T0 = 25 + 273.15
+
+    T = 1/(1/B * math.log(R_T/R0)+ 1/T0)
+    T -= 273.15
+    return T
 
 '''
 def bin2dataTemp(binary,R):
@@ -78,6 +103,6 @@ def bin2dataTemp(binary,R):
     return 1/(1/(25+273)+math.log(((Voltage/(5.1-Voltage))*R)/10000)/4126)-273
 '''
 
-if __name__ == "__main__":
-    args = sys.argv
-    main(args[1],args[2])
+#if __name__ == "__main__":
+#    args = sys.argv
+main(inputfilepath,outputfilepath)
